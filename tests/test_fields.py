@@ -1,5 +1,3 @@
-import uuid
-
 from mock import Mock
 from nose.tools import (
     assert_true, assert_false,
