@@ -8,7 +8,7 @@ from nose.tools import (
 from unittest import TestCase
 
 from unleashed.fields import Field
-from unleashed.resource import UnleashedResource
+from unleashed.resources import UnleashedResource
 
 
 class DummyResource(UnleashedResource):

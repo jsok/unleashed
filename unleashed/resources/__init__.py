@@ -6,6 +6,9 @@ class UnleashedResource(object):
     Base class for a resource which is accessible through the Unleashed API.
     """
 
+    # The API endpoint this resource exists at
+    ENDPOINT = ''
+
     fields = []
 
     def __init__(self):
