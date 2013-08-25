@@ -1,6 +1,9 @@
 import json
 
 
+__all__ = ['UnleashedResource', 'UnleashedResourceCollection']
+
+
 class UnleashedResource(object):
     """
     Base class for a resource which is accessible through the Unleashed API.
@@ -35,6 +38,12 @@ class UnleashedResource(object):
             separators=(',', ': ')
         )
 
+    def set_guid(self, guid):
+        raise NotImplementedError("Resource does not define a Guid field")
+
+    def add__get_query(self):
+        raise NotImplementedError("Resource does not define an endpoint to add or update")
+
     def from_dict(self, dict_val):
         """
         Set all the resource's field values from a dictionary.
@@ -65,3 +74,24 @@ class UnleashedResource(object):
     def to_json(self):
         out = self.to_dict()
         return json.dumps(out)
+
+
+class UnleashedResourceCollection(UnleashedResource):
+    """
+    Base class for a resource listing returned by the Unleashed API.
+    """
+
+    fields = []
+    COLLECTION_FOR = UnleashedResource
+
+    def __init__(self, paginated=False):
+        import unleashed.fields as fields
+
+        self.fields = [fields.FieldResourceList("Items", self.COLLECTION_FOR)]
+
+        if paginated:
+            from unleashed.resources.pagination import Pagination
+
+            self.fields.append(fields.FieldEmbeddedResource("Pagination", Pagination()))
+
+        super(UnleashedResourceCollection, self).__init__()
