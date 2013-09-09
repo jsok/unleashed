@@ -12,47 +12,91 @@ class MetaResource(type):
         """
 
         dct['__resourcefields__'] = {}
+        dct['__embeddedresources__'] = {}
 
         for attr_name, attr in dct.iteritems():
             if hasattr(attr, '__resourcefield__') and attr.__resourcefield__:
                 dct['__resourcefields__'][attr_name] = attr
                 attr.__fieldname__ = attr_name
                 attr.__parentresource__ = name
+            elif hasattr(attr, '__metaclass__') and attr.__metaclass__ == mcs:
+                dct['__embeddedresources__'][attr_name] = attr
 
-        for attr_name in dct['__resourcefields__'].iterkeys():
-            del dct[attr_name]
+        return super(MetaResource, mcs).__new__(mcs, name, bases, dct)
 
+    def __init__(cls, name, bases, dct):
+        cls.guess_endpoint()
+        cls.convert_fields()
+        cls.convert_embedded_resources()
+        super(MetaResource, cls).__init__(name, bases, dct)
+
+    def guess_endpoint(cls):
+        """
+        If the class does not specify an `__endpoint__`, derive one from its name.
+        """
+
+        # Inheriting __endpoint__ is not enough, ensure it's in the class __dict__.
+        # Otherwise it will also inherit it's base class' endpoint.
+        # (Probably not what you want)
+        if '__endpoint__' in cls.__dict__ and cls.__endpoint__ is not None:
+            return
+        else:
+            cls.__endpoint__ = cls.__name__
+
+    def convert_fields(cls):
+        """
+        Convert all the collected resource fields into class properties.
+        """
+
+        for attr_name in cls.__resourcefields__.iterkeys():
             def getter(attr_name):
                 def getter(cls):
                     return cls.__resourcefields__[attr_name].value
+
                 return getter
 
             def setter(attr_name):
                 def setter(cls, value):
                     cls.__resourcefields__[attr_name].value = value
+
                 return setter
 
-            dct[attr_name] = property(getter(attr_name), setter(attr_name))
+            setattr(cls, attr_name, property(getter(attr_name), setter(attr_name)))
 
-        return super(MetaResource, mcs).__new__(mcs, name, bases, dct)
-
-    def __init__(cls, name, bases, dct):
-        cls.guess_endpoint(name, dct)
-        super(MetaResource, cls).__init__(name, bases, dct)
-
-    def guess_endpoint(cls, name, dct):
+    def convert_embedded_resources(cls):
         """
-        If the class does not specify an `__endpoint__`, derive one from its name.
+        Convert all the collected embedded resources into class properties.
         """
-        if '__endpoint__' not in dct:
-            cls.__endpoint__ = name
-        elif hasattr(cls, '__endpoint__') and cls.__endpoint__ is None:
-            cls.__endpoint__ = name
+
+        for attr_name in cls.__embeddedresources__.iterkeys():
+            def getter(attr_name):
+                def getter(cls):
+                    return cls.__embeddedresources__[attr_name]
+
+                return getter
+
+            def setter(attr_name):
+                def setter(cls, value):
+                    # Allow property to be set from dict or instance of the resource
+                    if isinstance(value, dict):
+                        cls.__embeddedresources__[attr_name].from_dict(value)
+                    else:
+                        cls.__embeddedresources__[attr_name] = value
+
+                return setter
+
+            setattr(cls, attr_name, property(getter(attr_name), setter(attr_name)))
 
 
 class UnleashedResource(object):
     __metaclass__ = MetaResource
+
+    # Override if necessary
     __endpoint__ = None
+
+    # Created by metaclass
+    __resourcefields__ = {}
+    __embeddedresources__ = {}
 
     def __repr__(self):
         return json.dumps(
@@ -79,13 +123,16 @@ class UnleashedResource(object):
         (Suitable for JSON encoding).
         """
         out = {}
+
         for name, field in self.__resourcefields__.iteritems():
-            out.update({name: getattr(self, name)})
-            #out.update({name: field.to_dict()})
+            out.update({name: field.to_dict()})
+
+        for name, resource in self.__embeddedresources__.iteritems():
+            out.update({name: resource.to_dict()})
 
         # Reduce dict to a single null if all it's values are None
-        # if all(map(lambda v: v is None, out.itervalues())):
-        #     out = None
+        if all(map(lambda v: v is None, out.itervalues())):
+            out = None
 
         return out
 

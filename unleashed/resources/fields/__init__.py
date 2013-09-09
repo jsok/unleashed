@@ -121,7 +121,6 @@ class FieldNullableDateTime(Field):
         return self._value
 
     def set_value(self, value):
-        print "setting datetime from value %s" % value
         try:
             groups = FieldNullableDateTime.dt.match(value)
             ms = int(groups.group(1))
@@ -131,36 +130,6 @@ class FieldNullableDateTime(Field):
         self._value = self._from_epoch_milliseconds(ms)
 
     value = property(get_value, set_value)
-
-
-class FieldEmbeddedResource(Field):
-    def __init__(self, resource, required=False):
-        """
-        A Field which Embeds a Resource.
-        The value of this field is a reference to a resource (which
-        may in turn have more Fields inside of it).
-        """
-        super(FieldEmbeddedResource, self).__init__(required=required)
-        self.value = resource
-
-    def to_dict(self):
-        """
-        Wrap the dictionary representation of the resource.
-        """
-        return self.value.to_dict()
-
-    def set_value(self, val):
-        """
-        Set the value of the underlying resource from the given value.
-        """
-
-        if val and not isinstance(val, dict):
-            raise FieldValueException("Cannot set value of FieldEmbeddedResource from non-dict type")
-        # TODO: Support setting from an instance of the resource
-        # elif isinstance(val, type(self.value)):
-        #     self.value = val
-
-        self.value.from_dict(val)
 
 
 class FieldResourceList(Field):

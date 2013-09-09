@@ -8,68 +8,6 @@ from unittest import TestCase, skip
 
 import json
 
-from unleashed.resources.fields import Field
-from unleashed.resources import UnleashedResource
-
-
-class DummyResource(UnleashedResource):
-    __endpoint__ = "MyEndPoint"
-
-    Foo = Field()
-    Bar = Field()
-    Baz = Field()
-
-
-class UnleashedResourceTestCase(TestCase):
-    def test_fields_accessible_as_attributes(self):
-        r = DummyResource()
-
-        assert_true(hasattr(r, 'Foo'))
-        assert_true(hasattr(r, 'Bar'))
-        assert_true(hasattr(r, 'Baz'))
-
-        r.Foo = 42
-
-    def test_fields_settable_as_attributes(self):
-        r = DummyResource()
-        r.Foo = 42
-        r.Bar = -1
-
-        assert_equals(r.Foo, 42)
-        assert_equals(r.Bar, -1)
-
-    def test_from_dict(self):
-        r = DummyResource()
-
-        dict_value = {
-            'Foo': 1,
-            'Bar': 2,
-            'Baz': 3
-        }
-
-        r.from_dict(dict_value)
-
-        assert_equals(r.Foo, 1)
-        assert_equals(r.Bar, 2)
-        assert_equals(r.Baz, 3)
-
-    def test_to_dict(self):
-        r = DummyResource()
-        r.Foo = 1
-        r.Bar = 2
-        r.Baz = 3
-
-        dict_val = r.to_dict()
-
-        assert_equals(
-            dict_val,
-            {
-                'Foo': 1,
-                'Bar': 2,
-                'Baz': 3
-            }
-        )
-
 
 class ProductResourceTestCase(TestCase):
 
@@ -81,10 +19,9 @@ class ProductResourceTestCase(TestCase):
         p.from_dict(product_dict)
 
         assert_equals(p.ProductCode, '_TEST01')
-        print p.LastModifiedOn
-        # assert_equals(p.ProductGroup.GroupName.value, '_Test')
-        # assert_equals(p.SellPriceTier1.Name, 'RRP')
-        # assert_equals(p.SellPriceTier1.Value, '15.0000')
+        assert_equals(p.ProductGroup.GroupName, '_Test')
+        assert_equals(p.SellPriceTier1.Name, 'RRP')
+        assert_equals(p.SellPriceTier1.Value, '15.0000')
 
 
 test_product_json = """
